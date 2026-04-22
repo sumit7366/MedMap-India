@@ -1,3 +1,18 @@
+# Environment files
 .env.local
-.env.local
+.env
+.env.*
+
+# Build output
 dist/
+
+# Dependencies
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
