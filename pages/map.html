@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Map View — MedMap India</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <style>
+    .map-layout { display: grid; grid-template-columns: 300px 1fr; height: calc(100vh - 62px); }
+    @media(max-width:800px){ .map-layout { grid-template-columns:1fr; } }
+    .map-sidebar {
+      background: var(--bg); border-right: 1px solid var(--border);
+      overflow-y: auto; padding: 20px;
+    }
+    #mapContainer { width: 100%; height: 100%; }
+    .map-filter-group { margin-bottom: 20px; }
+    .map-filter-title { font-family: var(--font-head); font-size: 0.82rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .toggle-btn {
+      width: 100%; text-align: left; background: var(--card); border: 1px solid var(--border);
+      color: var(--text); padding: 9px 14px; border-radius: 8px; cursor: pointer;
+      font-size: 0.85rem; margin-bottom: 6px; display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-body); transition: all 0.2s;
+    }
+    .toggle-btn.active { border-color: var(--accent); background: rgba(0,212,255,0.05); }
+    .toggle-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .legend { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-top: 16px; }
+    .legend-item { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.82rem; color: var(--text2); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .selected-info {
+      background: var(--card2); border: 1px solid var(--border2); border-radius: var(--radius);
+      padding: 16px; margin-top: 20px;
+    }
+    .selected-title { font-family: var(--font-head); font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+    .selected-body { font-size: 0.82rem; color: var(--text2); line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-logo" href="../index.html">
+        <span class="logo-icon">⚕</span>
+        <span class="logo-text">MedMap<span class="logo-india">India</span></span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Dashboard</a></li>
+        <li><a href="hospitals.html">Hospitals</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="map.html" class="active">Map View</a></li>
+        <li><a href="agent.html">AI Agent</a></li>
+        <li><a href="deserts.html">Medical Deserts</a></li>
+      </ul>
+      <div class="nav-badge">IDP Agent v1.0</div>
+    </div>
+  </nav>
+
+  <div class="map-layout">
+    <div class="map-sidebar">
+      <h2 style="font-family:var(--font-head);font-weight:800;font-size:1.1rem;margin-bottom:20px">🗺️ Map Filters</h2>
+
+      <div class="map-filter-group">
+        <div class="map-filter-title">Show Layers</div>
+        <button class="toggle-btn active" id="btn-hospitals" onclick="toggleLayer('hospitals')">
+          <span class="toggle-dot" style="background:var(--accent)"></span> Hospitals
+        </button>
+        <button class="toggle-btn active" id="btn-deserts" onclick="toggleLayer('deserts')">
+          <span class="toggle-dot" style="background:var(--red)"></span> Medical Deserts
+        </button>
+        <button class="toggle-btn active" id="btn-ngos" onclick="toggleLayer('ngos')">
+          <span class="toggle-dot" style="background:var(--yellow)"></span> NGOs
+        </button>
+      </div>
+
+      <div class="map-filter-group">
+        <div class="map-filter-title">Filter by Type</div>
+        <select id="mapFilter" class="filter-input" style="width:100%" onchange="applyMapFilter()">
+          <option value="">All Facilities</option>
+          <option value="public">Public Only</option>
+          <option value="private">Private Only</option>
+          <option value="desert">Medical Deserts Only</option>
+        </select>
+      </div>
+
+      <div class="legend">
+        <div class="map-filter-title" style="margin-bottom:10px">Legend</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Well-served (Score 1-3)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Moderate (Score 4-6)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div> Underserved (Score 7-8)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--red);box-shadow:0 0 8px var(--red)"></div> Critical Desert (Score 9-10)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--yellow);border:2px solid #fff"></div> NGO</div>
+      </div>
+
+      <div class="selected-info" id="selectedInfo" style="display:none">
+        <div class="selected-title" id="selTitle"></div>
+        <div class="selected-body" id="selBody"></div>
+      </div>
+    </div>
+
+    <div id="mapContainer"></div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script>
+    const map = L.map("mapContainer", {
+      center: [20.5937, 78.9629],
+      zoom: 5,
+      zoomControl: true
+    });
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: "© OSM © CartoDB",
+      subdomains: "abcd", maxZoom: 19
+    }).addTo(map);
+
+    function getMarkerColor(score) {
+      if (score <= 3) return "#00e5a0";
+      if (score <= 6) return "#ffa502";
+      if (score <= 8) return "#ff6b35";
+      return "#ff4757";
+    }
+
+    function createCircleMarker(lat, lng, score, size = 10) {
+      return L.circleMarker([lat, lng], {
+        radius: score >= 9 ? 14 : score >= 7 ? 11 : 8,
+        fillColor: getMarkerColor(score),
+        color: "#fff",
+        weight: 1.5,
+        opacity: 0.9,
+        fillOpacity: 0.85
+      });
+    }
+
+    let hospitalMarkers = [], ngoMarkers = [];
+    let showHospitals = true, showDeserts = true, showNGOs = true;
+    let mapFilterVal = "";
+
+    function renderMarkers() {
+      hospitalMarkers.forEach(m => map.removeLayer(m));
+      ngoMarkers.forEach(m => map.removeLayer(m));
+      hospitalMarkers = []; ngoMarkers = [];
+
+      let visibleHospitals = HOSPITALS.filter(h => {
+        if (mapFilterVal === "public" && h.operator !== "public") return false;
+        if (mapFilterVal === "private" && h.operator !== "private") return false;
+        if (mapFilterVal === "desert" && h.medicalDesertScore < 7) return false;
+        if (!showHospitals && h.medicalDesertScore < 7) return false;
+        if (!showDeserts && h.medicalDesertScore >= 7) return false;
+        return true;
+      });
+
+      visibleHospitals.forEach(h => {
+        const m = createCircleMarker(h.lat, h.lng, h.medicalDesertScore);
+        m.bindPopup(`
+          <div style="font-family:sans-serif;max-width:220px">
+            <strong style="font-size:0.9rem">${h.name}</strong><br/>
+            <span style="color:#888;font-size:0.8rem">📍 ${h.city}, ${h.state}</span><br/>
+            <span style="color:${getMarkerColor(h.medicalDesertScore)};font-weight:700">Desert Score: ${h.medicalDesertScore}/10</span><br/>
+            <span style="font-size:0.78rem">🛏 ${h.capacity} beds · 👨‍⚕️ ${h.numberDoctors} doctors</span><br/>
+            <span style="font-size:0.78rem">${h.type} · ${h.operator}</span>
+          </div>
+        `);
+        m.on("click", () => showSelected(h));
+        m.addTo(map);
+        hospitalMarkers.push(m);
+      });
+
+      if (showNGOs) {
+        NGOS.forEach(n => {
+          const m = L.circleMarker([n.lat, n.lng], {
+            radius: 9, fillColor: "#ffa502", color: "#fff",
+            weight: 2, opacity: 1, fillOpacity: 0.8,
+            dashArray: "4"
+          });
+          m.bindPopup(`
+            <strong>${n.name}</strong><br/>
+            <span style="color:#888;font-size:0.8rem">🤝 NGO · ${n.city}, ${n.state}</span><br/>
+            <span style="font-size:0.78rem">Operates in: ${n.regionsServed.join(", ")}</span>
+          `);
+          m.addTo(map);
+          ngoMarkers.push(m);
+        });
+      }
+    }
+
+    function toggleLayer(layer) {
+      if (layer === "hospitals") { showHospitals = !showHospitals; document.getElementById("btn-hospitals").classList.toggle("active"); }
+      if (layer === "deserts") { showDeserts = !showDeserts; document.getElementById("btn-deserts").classList.toggle("active"); }
+      if (layer === "ngos") { showNGOs = !showNGOs; document.getElementById("btn-ngos").classList.toggle("active"); }
+      renderMarkers();
+    }
+
+    function applyMapFilter() {
+      mapFilterVal = document.getElementById("mapFilter").value;
+      renderMarkers();
+    }
+
+    function showSelected(h) {
+      document.getElementById("selectedInfo").style.display = "block";
+      document.getElementById("selTitle").textContent = h.name;
+      document.getElementById("selBody").innerHTML = `
+        📍 ${h.city}, ${h.state}<br/>
+        🏥 ${h.type} · ${h.operator}<br/>
+        🛏 ${h.capacity} beds · 👨‍⚕️ ${h.numberDoctors} doctors<br/>
+        Desert Score: <strong style="color:${getMarkerColor(h.medicalDesertScore)}">${h.medicalDesertScore}/10 — ${getDesertLabel(h.medicalDesertScore)}</strong><br/>
+        <br/>
+        <strong>Specialties:</strong> ${h.specialties.slice(0,3).map(s => specialtyLabel(s)).join(", ")}${h.specialties.length > 3 ? "..." : ""}<br/>
+        <strong>Volunteers:</strong> ${h.acceptsVolunteers ? "✅ Accepted" : "❌ Not accepted"}
+        <br/><br/>
+        <a href="hospitals.html" style="color:var(--accent);font-size:0.8rem">View All Facilities →</a>
+      `;
+    }
+
+    renderMarkers();
+  </script>
+</body>
+</html>

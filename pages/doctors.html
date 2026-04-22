@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doctors — MedMap India</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .doctors-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+    .doc-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px; cursor: pointer;
+      transition: all 0.2s; position: relative;
+    }
+    .doc-card:hover { border-color: var(--green); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,229,160,0.1); }
+    .doc-avatar {
+      width: 52px; height: 52px; background: linear-gradient(135deg, var(--accent2), var(--green));
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; margin-bottom: 14px;
+    }
+    .doc-name { font-family: var(--font-head); font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
+    .doc-specialty { font-size: 0.82rem; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
+    .doc-sub { font-size: 0.78rem; color: var(--text2); margin-bottom: 12px; }
+    .doc-hospital { font-size: 0.82rem; color: var(--text2); margin-bottom: 14px; padding: 8px 12px; background: var(--card2); border-radius: 8px; }
+    .doc-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .doc-tag { font-size: 0.72rem; padding: 3px 9px; border-radius: 7px; font-weight: 600; }
+    .doc-exp { background: rgba(0,212,255,0.1); color: var(--accent); }
+    .doc-fee { background: rgba(0,229,160,0.1); color: var(--green); }
+    .doc-transfer { background: rgba(255,165,2,0.1); color: var(--yellow); }
+    .transfer-badge {
+      position: absolute; top: 16px; right: 16px;
+      background: var(--yellow); color: #000; font-size: 0.68rem; font-weight: 800;
+      padding: 3px 10px; border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-logo" href="../index.html">
+        <span class="logo-icon">⚕</span>
+        <span class="logo-text">MedMap<span class="logo-india">India</span></span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Dashboard</a></li>
+        <li><a href="hospitals.html">Hospitals</a></li>
+        <li><a href="doctors.html" class="active">Doctors</a></li>
+        <li><a href="map.html">Map View</a></li>
+        <li><a href="agent.html">AI Agent</a></li>
+        <li><a href="deserts.html">Medical Deserts</a></li>
+      </ul>
+      <div class="nav-badge">IDP Agent v1.0</div>
+    </div>
+  </nav>
+
+  <div class="page-inner">
+    <h1 class="page-title">👨‍⚕️ Medical Professionals</h1>
+    <p class="page-subtitle">Doctors mapped across Indian healthcare facilities — <span id="totalCount">0</span> professionals</p>
+
+    <div class="filter-bar">
+      <input type="text" id="filterSearch" placeholder="Search by name, specialty, city..." class="filter-input" style="width:260px" oninput="applyFilters()" />
+      <select id="filterSpecialty" class="filter-input" onchange="applyFilters()">
+        <option value="">All Specialties</option>
+      </select>
+      <select id="filterState" class="filter-input" onchange="applyFilters()">
+        <option value="">All States</option>
+      </select>
+      <select id="filterTransfer" class="filter-input" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="yes">Available for Transfer</option>
+        <option value="no">Not Available</option>
+      </select>
+    </div>
+
+    <div class="doctors-grid" id="doctorsGrid"></div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script>
+    let filtered = [...DOCTORS];
+
+    function populateFilters() {
+      const specs = [...new Set(DOCTORS.map(d => d.specialty))].sort();
+      const specSel = document.getElementById("filterSpecialty");
+      specs.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s; opt.textContent = specialtyLabel(s);
+        specSel.appendChild(opt);
+      });
+      const states = [...new Set(DOCTORS.map(d => d.state))].sort();
+      const stateSel = document.getElementById("filterState");
+      states.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s; opt.textContent = s;
+        stateSel.appendChild(opt);
+      });
+    }
+
+    function applyFilters() {
+      const q = document.getElementById("filterSearch").value.toLowerCase();
+      const spec = document.getElementById("filterSpecialty").value;
+      const state = document.getElementById("filterState").value;
+      const transfer = document.getElementById("filterTransfer").value;
+
+      filtered = DOCTORS.filter(d => {
+        if (q && !d.name.toLowerCase().includes(q) && !d.city.toLowerCase().includes(q) && !d.specialty.toLowerCase().includes(q) && !d.subSpecialty.toLowerCase().includes(q)) return false;
+        if (spec && d.specialty !== spec) return false;
+        if (state && d.state !== state) return false;
+        if (transfer === "yes" && !d.availableForTransfer) return false;
+        if (transfer === "no" && d.availableForTransfer) return false;
+        return true;
+      });
+      renderGrid();
+    }
+
+    function renderGrid() {
+      document.getElementById("totalCount").textContent = filtered.length;
+      const grid = document.getElementById("doctorsGrid");
+      if (!filtered.length) { grid.innerHTML = `<div style="color:var(--text2);padding:40px">No results found.</div>`; return; }
+      grid.innerHTML = filtered.map(d => `
+        <div class="doc-card" onclick="openDocModal('${d.id}')">
+          ${d.availableForTransfer ? '<div class="transfer-badge">🚀 For Transfer</div>' : ""}
+          <div class="doc-avatar">👨‍⚕️</div>
+          <div class="doc-name">${d.name}</div>
+          <div class="doc-specialty">${specialtyLabel(d.specialty)}</div>
+          <div class="doc-sub">${d.subSpecialty}</div>
+          <div class="doc-hospital">🏥 ${d.hospital}, ${d.city}</div>
+          <div class="doc-tags">
+            <span class="doc-tag doc-exp">${d.experience} yrs exp</span>
+            <span class="doc-tag doc-fee">${d.consultationFee === 0 ? "Free" : "₹" + d.consultationFee}</span>
+            ${d.qualifications.slice(0,2).map(q => `<span class="doc-tag" style="background:rgba(255,255,255,0.05);color:var(--text2)">${q}</span>`).join("")}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    let modalEl = null;
+    function openDocModal(id) {
+      const d = DOCTORS.find(x => x.id === id);
+      if (!d) return;
+      if (!modalEl) {
+        modalEl = document.createElement("div");
+        modalEl.className = "modal-overlay";
+        modalEl.innerHTML = `<div class="modal" id="modalInner"></div>`;
+        modalEl.addEventListener("click", e => { if (e.target === modalEl) closeModal(); });
+        document.body.appendChild(modalEl);
+      }
+      document.getElementById("modalInner").innerHTML = `
+        <button class="modal-close" onclick="closeModal()">✕</button>
+        <h2>${d.name}</h2>
+        <div class="modal-location">👨‍⚕️ ${specialtyLabel(d.specialty)} &nbsp;|&nbsp; ${d.subSpecialty} &nbsp;|&nbsp; ${d.city}, ${d.state}</div>
+        <div class="modal-section">
+          <div class="modal-info-grid">
+            <div class="modal-info-item"><div class="modal-info-label">Experience</div><div class="modal-info-value text-accent">${d.experience} years</div></div>
+            <div class="modal-info-item"><div class="modal-info-label">Consultation Fee</div><div class="modal-info-value text-green">${d.consultationFee === 0 ? "Free" : "₹" + d.consultationFee}</div></div>
+            <div class="modal-info-item"><div class="modal-info-label">Hospital</div><div class="modal-info-value" style="font-size:0.82rem">${d.hospital}</div></div>
+            <div class="modal-info-item"><div class="modal-info-label">For Transfer</div><div class="modal-info-value">${d.availableForTransfer ? "✅ Yes" : "❌ No"}</div></div>
+          </div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-title">Qualifications</div>
+          <div class="modal-tags">${d.qualifications.map(q => `<span class="modal-tag">${q}</span>`).join("")}</div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-title">Procedures</div>
+          <div class="modal-tags">${d.procedures.map(p => `<span class="modal-tag">${p}</span>`).join("")}</div>
+        </div>
+        <div class="modal-section">
+          <div class="modal-section-title">Languages</div>
+          <div class="modal-tags">${d.languages.map(l => `<span class="modal-tag">${l}</span>`).join("")}</div>
+        </div>
+        ${d.phone ? `<div class="modal-section"><div class="modal-section-title">Contact</div><div style="font-size:0.88rem;color:var(--text2)">${d.phone}</div></div>` : ""}
+      `;
+      modalEl.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeModal() {
+      if (modalEl) { modalEl.classList.remove("open"); document.body.style.overflow = ""; }
+    }
+    document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+    populateFilters();
+    applyFilters();
+  </script>
+</body>
+</html>

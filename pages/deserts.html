@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Medical Deserts — MedMap India</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .deserts-hero {
+      background: linear-gradient(135deg, rgba(255,71,87,0.1), rgba(255,107,53,0.05));
+      border: 1px solid rgba(255,71,87,0.2); border-radius: var(--radius-lg);
+      padding: 32px; margin-bottom: 32px;
+    }
+    .deserts-hero h2 { font-family: var(--font-head); font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; }
+    .deserts-hero p { color: var(--text2); max-width: 600px; }
+    .deserts-stats { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+    .ds-stat { background: var(--card); border-radius: var(--radius); padding: 16px 20px; }
+    .ds-stat-val { font-family: var(--font-head); font-size: 2rem; font-weight: 800; }
+    .ds-stat-label { font-size: 0.78rem; color: var(--text2); }
+
+    .desert-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+    .desert-card.critical { border-color: rgba(255,71,87,0.3); background: rgba(255,71,87,0.04); }
+    .desert-card.severe { border-color: rgba(255,71,87,0.5); background: rgba(255,71,87,0.07); }
+    .desert-card-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+    .desert-score-ring {
+      width: 60px; height: 60px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      font-family: var(--font-head); font-size: 1.3rem; font-weight: 800;
+    }
+    .ring-8 { background: rgba(255,107,53,0.15); color: var(--orange); border: 2px solid var(--orange); }
+    .ring-9, .ring-10 { background: rgba(255,71,87,0.15); color: var(--red); border: 2px solid var(--red); }
+    .desert-card-title { font-family: var(--font-head); font-weight: 700; font-size: 1.1rem; }
+    .desert-card-loc { color: var(--text2); font-size: 0.85rem; margin-top: 4px; }
+    .gap-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin-top: 14px; }
+    .gap-item {
+      background: var(--card2); border-radius: 8px; padding: 10px 14px;
+      font-size: 0.82rem;
+    }
+    .gap-item-label { color: var(--text3); font-size: 0.72rem; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+    .gap-value.bad { color: var(--red); font-weight: 600; }
+    .gap-value.medium { color: var(--yellow); font-weight: 600; }
+    .gap-value.good { color: var(--green); font-weight: 600; }
+    .recommendation {
+      margin-top: 14px; padding: 12px 16px; border-radius: 8px;
+      background: rgba(0,229,160,0.05); border: 1px solid rgba(0,229,160,0.15);
+      font-size: 0.85rem; color: var(--text2);
+    }
+    .recommendation strong { color: var(--green); }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a class="nav-logo" href="../index.html">
+        <span class="logo-icon">⚕</span>
+        <span class="logo-text">MedMap<span class="logo-india">India</span></span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html">Dashboard</a></li>
+        <li><a href="hospitals.html">Hospitals</a></li>
+        <li><a href="doctors.html">Doctors</a></li>
+        <li><a href="map.html">Map View</a></li>
+        <li><a href="agent.html">AI Agent</a></li>
+        <li><a href="deserts.html" class="active">Medical Deserts</a></li>
+      </ul>
+      <div class="nav-badge">IDP Agent v1.0</div>
+    </div>
+  </nav>
+
+  <div class="page-inner">
+
+    <div class="deserts-hero">
+      <h2>🚨 Medical Desert Analysis</h2>
+      <p>Regions where healthcare infrastructure is critically insufficient to meet population needs — identified through IDP extraction and capability scoring.</p>
+      <div class="deserts-stats" id="desertsStats"></div>
+    </div>
+
+    <div id="desertCards"></div>
+
+    <!-- All Facilities Table -->
+    <div style="margin-top:40px">
+      <h2 style="font-family:var(--font-head);font-size:1.4rem;font-weight:700;margin-bottom:16px">📊 All Facilities Coverage Ranking</h2>
+      <div style="overflow-x:auto;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:8px">
+        <table class="data-table" id="coverageTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/data.js"></script>
+  <script>
+    function renderDesertStats() {
+      const d = HOSPITALS.filter(h => h.medicalDesertScore >= 7);
+      const severe = HOSPITALS.filter(h => h.medicalDesertScore >= 9);
+      const totalDocs = HOSPITALS.filter(h => h.medicalDesertScore >= 7).reduce((a, h) => a + h.numberDoctors, 0);
+      const totalPop = d.length; // proxy
+      document.getElementById("desertsStats").innerHTML = `
+        <div class="ds-stat"><div class="ds-stat-val text-red">${d.length}</div><div class="ds-stat-label">Critical Medical Deserts</div></div>
+        <div class="ds-stat"><div class="ds-stat-val text-red">${severe.length}</div><div class="ds-stat-label">Severe (Score 9-10)</div></div>
+        <div class="ds-stat"><div class="ds-stat-val text-yellow">${totalDocs}</div><div class="ds-stat-label">Doctors in Desert Zones</div></div>
+        <div class="ds-stat"><div class="ds-stat-val text-accent">${DOCTORS.filter(d=>d.availableForTransfer).length}</div><div class="ds-stat-label">Doctors Available for Transfer</div></div>
+      `;
+    }
+
+    function renderDesertCards() {
+      const deserts = HOSPITALS.filter(h => h.medicalDesertScore >= 7).sort((a,b) => b.medicalDesertScore - a.medicalDesertScore);
+      const container = document.getElementById("desertCards");
+
+      const recommendations = {
+        H007: "Deploy specialist doctors from urban centers. Jan Swasthya Sahyog [N002] active in neighboring CG. Urgent need: cardiologist, neurologist.",
+        H008: "MSF India [N003] or Doctors For You [N001] should be contacted for immediate deployment. X-Ray machine non-functional — needs urgent replacement.",
+        H009: "Doctors For You [N001] covers Bihar region. Only 4 doctors for large tribal population. Need: surgeon, gynecologist, pediatrician.",
+        H014: "Maharashtra government should prioritize this tribal district. Nearest tertiary care: Tata Memorial Mumbai (350km away). ICU lacks ventilators.",
+        H012: "Only 1 doctor, OPD-only facility, no emergency care. UP Government health mission needs immediate intervention here."
+      };
+
+      container.innerHTML = deserts.map(h => `
+        <div class="desert-card ${h.medicalDesertScore >= 9 ? 'severe' : 'critical'}">
+          <div class="desert-card-head">
+            <div class="desert-score-ring ring-${Math.min(h.medicalDesertScore, 10)}">${h.medicalDesertScore}/10</div>
+            <div>
+              <div class="desert-card-title">${h.name}</div>
+              <div class="desert-card-loc">📍 ${h.city}, ${h.state} · ${h.region} · ${h.type}</div>
+              <div style="margin-top:6px">
+                <span class="score-badge score-10">${getDesertLabel(h.medicalDesertScore)}</span>
+                &nbsp;<span style="font-size:0.78rem;color:var(--text3)">${h.operator} · Est. ${h.yearEstablished}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="gap-list">
+            <div class="gap-item">
+              <div class="gap-item-label">Doctors</div>
+              <div class="gap-value ${h.numberDoctors <= 4 ? 'bad' : h.numberDoctors <= 20 ? 'medium' : 'good'}">${h.numberDoctors}</div>
+            </div>
+            <div class="gap-item">
+              <div class="gap-item-label">Beds</div>
+              <div class="gap-value ${h.capacity <= 50 ? 'bad' : h.capacity <= 200 ? 'medium' : 'good'}">${h.capacity}</div>
+            </div>
+            <div class="gap-item">
+              <div class="gap-item-label">ICU</div>
+              <div class="gap-value bad">${h.capabilities.find(c => c.toLowerCase().includes("icu")) || "None / Very Limited"}</div>
+            </div>
+            <div class="gap-item">
+              <div class="gap-item-label">Specialties</div>
+              <div class="gap-value medium">${h.specialties.length} available</div>
+            </div>
+            <div class="gap-item">
+              <div class="gap-item-label">Equipment</div>
+              <div class="gap-value ${h.equipment.length <= 3 ? 'bad' : 'medium'}">${h.equipment.length} items</div>
+            </div>
+            <div class="gap-item">
+              <div class="gap-item-label">Volunteers</div>
+              <div class="gap-value ${h.acceptsVolunteers ? 'good' : 'bad'}">${h.acceptsVolunteers ? "✅ Accepted" : "❌ No"}</div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--text3);margin-bottom:6px">Capabilities</div>
+            <div style="display:flex;flex-wrap:wrap;gap:5px">
+              ${h.capabilities.map(c => `<span style="font-size:0.75rem;padding:2px 8px;border-radius:6px;background:rgba(255,71,87,0.1);color:var(--red)">${c}</span>`).join("")}
+            </div>
+          </div>
+
+          ${recommendations[h.id] ? `
+          <div class="recommendation">
+            <strong>💡 Recommendation:</strong> ${recommendations[h.id]}
+          </div>` : ""}
+        </div>
+      `).join("");
+    }
+
+    function renderCoverageTable() {
+      const sorted = [...HOSPITALS].sort((a, b) => b.medicalDesertScore - a.medicalDesertScore);
+      const table = document.getElementById("coverageTable");
+      table.innerHTML = `
+        <thead><tr>
+          <th>Facility</th><th>City</th><th>State</th><th>Beds</th><th>Doctors</th><th>Specialties</th><th>Coverage</th>
+        </tr></thead>
+        <tbody>
+          ${sorted.map(h => `
+            <tr>
+              <td><strong>${h.name}</strong> <span style="font-size:0.75rem;color:var(--text3)">${typeIcon(h.type)}</span></td>
+              <td>${h.city}</td>
+              <td>${h.state}</td>
+              <td>${h.capacity}</td>
+              <td>${h.numberDoctors}</td>
+              <td>${h.specialties.length}</td>
+              <td><span class="score-badge ${getScoreClass(h.medicalDesertScore)}">${getDesertLabel(h.medicalDesertScore)}</span></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      `;
+    }
+
+    renderDesertStats();
+    renderDesertCards();
+    renderCoverageTable();
+  </script>
+</body>
+</html>

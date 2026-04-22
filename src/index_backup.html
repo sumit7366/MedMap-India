@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MedMap India — IDP Agent for Healthcare Intelligence</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="nav-logo">
+        <span class="logo-icon">⚕</span>
+        <span class="logo-text">MedMap<span class="logo-india">India</span></span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html" class="active">Dashboard</a></li>
+        <li><a href="pages/hospitals.html">Hospitals</a></li>
+        <li><a href="pages/doctors.html">Doctors</a></li>
+        <li><a href="pages/map.html">Map View</a></li>
+        <li><a href="pages/agent.html">AI Agent</a></li>
+        <li><a href="pages/deserts.html">Medical Deserts</a></li>
+      </ul>
+      <div class="nav-badge">IDP Agent v1.0</div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg-grid"></div>
+    <div class="hero-content">
+      <div class="hero-tag">Databricks × Accenture Hackathon</div>
+      <h1 class="hero-title">
+        Bridging Medical Deserts<br/>
+        <span class="hero-accent">Across India</span>
+      </h1>
+      <p class="hero-sub">
+        An Intelligent Document Parsing (IDP) Agent that extracts, verifies, and maps healthcare capabilities —
+        identifying gaps and connecting expertise to underserved regions.
+      </p>
+      <div class="hero-actions">
+        <a href="pages/agent.html" class="btn-primary">Launch AI Agent</a>
+        <a href="pages/map.html" class="btn-secondary">View Map →</a>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-card">
+        <span class="stat-num" id="stat-hospitals">15</span>
+        <span class="stat-label">Facilities Mapped</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="stat-doctors">10</span>
+        <span class="stat-label">Doctors Profiled</span>
+      </div>
+      <div class="stat-card stat-alert">
+        <span class="stat-num" id="stat-deserts">5</span>
+        <span class="stat-label">Medical Deserts</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-num" id="stat-states">12</span>
+        <span class="stat-label">States Covered</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEARCH BAR -->
+  <section class="search-section">
+    <div class="search-wrap">
+      <div class="search-icon">🔍</div>
+      <input type="text" id="globalSearch" placeholder="Search hospitals, doctors, specialties, cities..." class="search-input" />
+      <button class="search-btn" onclick="doSearch()">Search</button>
+    </div>
+    <div id="searchResults" class="search-results hidden"></div>
+  </section>
+
+  <!-- MAIN CONTENT GRID -->
+  <main class="main-grid">
+
+    <!-- Left Panel: Medical Deserts Alert -->
+    <section class="panel panel-alert">
+      <div class="panel-header">
+        <span class="panel-icon">🚨</span>
+        <h2>Medical Deserts Detected</h2>
+      </div>
+      <p class="panel-desc">Facilities with critical infrastructure gaps and high unmet need.</p>
+      <div class="desert-list" id="desertList">
+        <!-- injected by JS -->
+      </div>
+    </section>
+
+    <!-- Center Panel: India Heatmap (SVG) -->
+    <section class="panel panel-map">
+      <div class="panel-header">
+        <span class="panel-icon">🗺️</span>
+        <h2>India Healthcare Coverage</h2>
+        <a href="pages/map.html" class="panel-link">Full Map →</a>
+      </div>
+      <div class="india-map-container">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/India_location_map.svg/480px-India_location_map.svg.png" alt="India Map" class="india-base-map" />
+        <div class="map-pins" id="mapPins">
+          <!-- pins injected by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Panel: Recent Facilities -->
+    <section class="panel panel-list">
+      <div class="panel-header">
+        <span class="panel-icon">🏥</span>
+        <h2>Recent Facilities</h2>
+        <a href="pages/hospitals.html" class="panel-link">All →</a>
+      </div>
+      <div class="facility-cards" id="facilityCards">
+        <!-- injected by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- SPECIALTY COVERAGE -->
+  <section class="specialty-section">
+    <div class="section-head">
+      <h2>Specialty Coverage Across India</h2>
+      <p>Distribution of medical specialties in mapped facilities</p>
+    </div>
+    <div class="specialty-grid" id="specialtyGrid">
+      <!-- injected by JS -->
+    </div>
+  </section>
+
+  <!-- IDP AGENT PREVIEW -->
+  <section class="agent-preview">
+    <div class="agent-preview-content">
+      <h2>Ask the IDP AI Agent</h2>
+      <p>Query the entire healthcare dataset in natural language. Get instant insights on facility capabilities, gaps, and routing recommendations.</p>
+      <div class="agent-demo-queries">
+        <span class="demo-q" onclick="goToAgent('Which districts in Bihar are medical deserts?')">Which districts in Bihar are medical deserts?</span>
+        <span class="demo-q" onclick="goToAgent('Find cardiologists available for transfer')">Find cardiologists available for transfer</span>
+        <span class="demo-q" onclick="goToAgent('Which hospitals lack ICU capacity?')">Which hospitals lack ICU capacity?</span>
+        <span class="demo-q" onclick="goToAgent('Compare AIIMS vs CMC Vellore capabilities')">Compare AIIMS vs CMC Vellore</span>
+      </div>
+      <a href="pages/agent.html" class="btn-primary">Open Full Agent →</a>
+    </div>
+    <div class="agent-preview-visual">
+      <div class="agent-chat-mock">
+        <div class="chat-msg user">Find hospitals with no ICU in rural areas</div>
+        <div class="chat-msg bot">
+          <span class="bot-tag">IDP Agent</span>
+          Found <strong>3 critical gaps</strong>: Malkangiri PHC (Odisha) — <span class="tag-red">No ICU</span>, Kishori Hospital (UP) — <span class="tag-red">OPD only</span>, Nandurbar DH — <span class="tag-yellow">4 ICU beds, no ventilator</span>. Recommend routing cardiac emergencies to JIPMER or CMC Vellore.
+        </div>
+        <div class="chat-msg user">Which NGOs cover these areas?</div>
+        <div class="chat-msg bot">
+          <span class="bot-tag">IDP Agent</span>
+          <strong>Doctors For You</strong> operates in Odisha & UP. <strong>JSS</strong> covers Chhattisgarh tribal belt. <strong>MSF India</strong> has capacity in Bihar. All accept volunteers.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div>
+        <div class="nav-logo">
+          <span class="logo-icon">⚕</span>
+          <span class="logo-text">MedMap<span class="logo-india">India</span></span>
+        </div>
+        <p>Powered by Databricks · Built for the Virtue Foundation</p>
+      </div>
+      <div class="footer-links">
+        <a href="pages/hospitals.html">Hospitals</a>
+        <a href="pages/doctors.html">Doctors</a>
+        <a href="pages/map.html">Map</a>
+        <a href="pages/agent.html">AI Agent</a>
+        <a href="pages/deserts.html">Deserts</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/data.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
