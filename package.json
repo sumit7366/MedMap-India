@@ -4,6 +4,9 @@
   "description": "## Databricks × Accenture Hackathon — IDP Agent for Healthcare Intelligence",
   "main": "index.js",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -19,8 +22,8 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-router-dom": "^7.14.2",
-    "vite": "^8.0.9",
-    "@vitejs/plugin-react": "^6.0.1"
+    "vite": "^5.4.0",
+    "@vitejs/plugin-react": "^4.3.0"
   },
   "devDependencies": {}
 }
